@@ -72,7 +72,7 @@ jobs:
         run: go mod tidy
 
       - name: Build the application
-        run: go build -o myapp .
+        run: go build -o myapp ./cmd
 
       - name: Run tests
         run: go test -v ./...

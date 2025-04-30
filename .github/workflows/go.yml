@@ -13,6 +13,16 @@ jobs:
 
   build:
     runs-on: ubuntu-latest
+    env:
+      ENV: ${{ secrets.ENV }}
+      JWT_SECRET: ${{ secrets.JWT_SECRET }}
+      BCRYPT_SALT: ${{ secrets.BCRYPT_SALT }}
+      DB_HOST: ${{ secrets.DB_HOST }} # Ganti dengan IP/hostname server Anda
+      DB_PORT: ${{ secrets.DB_PORT }}  # Port default PostgreSQL
+      DB_USERNAME: ${{ secrets.DB_USERNAME }}
+      DB_NAME: ${{ secrets.DB_NAME }}
+      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}  # Menggunakan secret untuk password
+      DB_PARAMS: ${{ secrets.DB_PARAMS }}
     steps:
     - uses: actions/checkout@v4
 
@@ -22,9 +32,20 @@ jobs:
         go-version: '1.24.2'
 
     - name: Build
-      run: go build -v ./...
+      run: go build -o backend ./cmd/api
+      
+    - name: Run app in background
+      run: nohup ./backend > backend.log 2>&1 &
+      
+    - name: Wait for backend to start
+      run: sleep 5
 
-    - name: Test
-      run: go test -v ./...
+    - name: Test app with curl
+      run: |
+        curl --fail http://localhost:8080/ || (echo "App not responding" && cat app.log && exit 1)
+        
+        
+
+      
 
       

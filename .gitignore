@@ -1,0 +1,79 @@
+# Binaries and build output
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+*.log
+
+# Go build
+bin/
+build/
+dist/
+*.a
+*.o
+
+# Go workspace
+go.work
+go.work.sum
+
+# Dependency management
+vendor/
+
+# IDEs and editors
+.vscode/
+.idea/
+*.swp
+*~
+*.sublime-workspace
+*.sublime-project
+
+# Environment files (very important!)
+.env
+.env.*
+*.env
+*.env.*
+.env.local
+.env.development
+.env.production
+.env.test
+.env.staging
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Coverage & test
+coverage.*
+*.coverprofile
+*.lcov
+*.testresult
+
+# Logs
+logs/
+*.log
+
+# Database or temp files
+*.db
+*.sqlite
+*.pid
+tmp/
+temp/
+*.sql
+
+# Docker
+docker-compose.override.yml
+.env.docker
+
+# Node (if you have frontend)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# JetBrains IDE (GoLand)
+*.iml
+.idea/

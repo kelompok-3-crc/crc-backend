@@ -26,3 +26,8 @@ jobs:
 
     - name: Test
       run: go test -v ./...
+
+    - name: Jalankan server
+      run: |
+        pkill -f ./my-app || true  
+        nohup ./my-app > server.log 2>&1 & 

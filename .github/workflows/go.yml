@@ -32,7 +32,7 @@ jobs:
         go-version: '1.24.2'
 
     - name: Build
-      run: go build -o backend ./cmd/api
+      run: go build -o backend ./cmd/app
       
     - name: Run app in background
       run: nohup ./backend > backend.log 2>&1 &

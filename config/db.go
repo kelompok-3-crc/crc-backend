@@ -2,7 +2,6 @@ package config
 
 import (
 	"fmt"
-	"log"
 
 	_ "github.com/lib/pq"
 	"gorm.io/driver/postgres" // or mysql, sqlite, etc.
@@ -11,25 +10,14 @@ import (
 )
 
 func SetupDatabase(c *Configuration) *gorm.DB {
-	dataSourceName := fmt.Sprintf("host=%s user=%s dbname=%s port=%s sslmode=%s TimeZone=Asia/Jakarta",
+	dataSourceName := fmt.Sprintf("host=%s user=%s dbname=%s dbpassword=%s port=%s sslmode=%s TimeZone=Asia/Jakarta",
 		c.Postgres.PostgresqlHost,
 		c.Postgres.PostgresqlUser,
 		c.Postgres.PostgresqlDbname,
+		c.Postgres.PostgresqlPassword,
 		c.Postgres.PostgresqlPort,
 		c.Postgres.PostgresParams,
 	)
-
-	log.Println(c.Postgres)
-	if c.Postgres.PostgresqlPassword != "" {
-		dataSourceName = fmt.Sprintf("host=%s user=%s dbname=%s dbpassword=%s port=%s sslmode=%s TimeZone=Asia/Jakarta",
-			c.Postgres.PostgresqlHost,
-			c.Postgres.PostgresqlUser,
-			c.Postgres.PostgresqlDbname,
-			c.Postgres.PostgresqlPassword,
-			c.Postgres.PostgresqlPort,
-			c.Postgres.PostgresParams,
-		)
-	}
 
 	db, err := gorm.Open(postgres.Open(dataSourceName), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Info),

@@ -34,7 +34,7 @@ jobs:
         run: |
           mkdir -p /home/hendra/app
           cp ./myapp /home/hendra/app/
-
-      - name: Restart application using PM2
+      
+      - name: Restart application using systemd
         run: |
-          pm2 restart myapp || pm2 start /home/hendra/app/myapp --name myapp
+          sudo systemctl restart myapp.service

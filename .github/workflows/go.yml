@@ -78,7 +78,7 @@ jobs:
         run: go test -v ./...
 
   deploy:
-    runs-on: [self-hosted, linux]  # Menjalankan di self-hosted runner Linux
+    runs-on: ubuntu-latest  # Menjalankan di self-hosted runner Linux
     needs: build-test  # Hanya akan berjalan setelah build-test berhasil
 
     steps:

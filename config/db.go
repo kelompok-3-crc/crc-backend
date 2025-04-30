@@ -10,7 +10,7 @@ import (
 )
 
 func SetupDatabase(c *Configuration) *gorm.DB {
-	dataSourceName := fmt.Sprintf("host=%s user=%s dbname=%s dbpassword=%s port=%s sslmode=%s TimeZone=Asia/Jakarta",
+	dataSourceName := fmt.Sprintf("host=%s user=%s dbname=%s password=%s port=%s sslmode=%s TimeZone=Asia/Jakarta",
 		c.Postgres.PostgresqlHost,
 		c.Postgres.PostgresqlUser,
 		c.Postgres.PostgresqlDbname,

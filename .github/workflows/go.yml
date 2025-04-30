@@ -8,7 +8,7 @@ on:
 
 jobs:
   build-and-run:
-    runs-on: self-hosted  # Gunakan self-hosted runner Linux kamu
+    runs-on: [self-hosted, linux]  # Gunakan self-hosted runner Linux kamu
     steps:
     - name: Checkout repo
       uses: actions/checkout@v4

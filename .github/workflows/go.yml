@@ -1,50 +1,101 @@
 # This workflow will build a golang project
 # For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-go
 
-name: Go
+# name: Go
+
+# on:
+#   push:
+#     branches: [ "main" ]
+#   pull_request:
+#     branches: [ "main" ]
+
+# jobs:
+
+#   build:
+#     runs-on: self-hosted
+#     env:
+#       ENV: ${{ secrets.ENV }}
+#       JWT_SECRET: ${{ secrets.JWT_SECRET }}
+#       BCRYPT_SALT: ${{ secrets.BCRYPT_SALT }}
+#       DB_HOST: ${{ secrets.DB_HOST }} # Ganti dengan IP/hostname server Anda
+#       DB_PORT: ${{ secrets.DB_PORT }}  # Port default PostgreSQL
+#       DB_USERNAME: ${{ secrets.DB_USERNAME }}
+#       DB_NAME: ${{ secrets.DB_NAME }}
+#       DB_PASSWORD: ${{ secrets.DB_PASSWORD }}  # Menggunakan secret untuk password
+#       DB_PARAMS: ${{ secrets.DB_PARAMS }}
+#     steps:
+#     - uses: actions/checkout@v4
+
+#     - name: Set up Go
+#       uses: actions/setup-go@v4
+#       with:
+#         go-version: '1.24.2'
+
+#     - name: Build
+#       run: sudo go build -o /home/hendra/crcbackend ./cmd
+      
+#     - name: Run app in background
+#       run: sudo nohup ./home/hendra/crcbackend > backend.log 2>&1 &
+      
+#     - name: Wait for backend to start
+#       run: sleep 5
+
+#     - name: Test app with curl
+#       run: |
+#         curl http://127.0.0.1:8080/ || (echo "App not responding" && cat backend.log && exit 1)
+        
+        
+name: Go CI/CD
 
 on:
   push:
-    branches: [ "main" ]
+    branches:
+      - main
   pull_request:
-    branches: [ "main" ]
+    branches:
+      - main
 
 jobs:
+  build-test:
+    runs-on: ubuntu-latest  # Menjalankan di runner GitHub
 
-  build:
-    runs-on: self-hosted
-    env:
-      ENV: ${{ secrets.ENV }}
-      JWT_SECRET: ${{ secrets.JWT_SECRET }}
-      BCRYPT_SALT: ${{ secrets.BCRYPT_SALT }}
-      DB_HOST: ${{ secrets.DB_HOST }} # Ganti dengan IP/hostname server Anda
-      DB_PORT: ${{ secrets.DB_PORT }}  # Port default PostgreSQL
-      DB_USERNAME: ${{ secrets.DB_USERNAME }}
-      DB_NAME: ${{ secrets.DB_NAME }}
-      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}  # Menggunakan secret untuk password
-      DB_PARAMS: ${{ secrets.DB_PARAMS }}
     steps:
-    - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Set up Go
-      uses: actions/setup-go@v4
-      with:
-        go-version: '1.24.2'
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
 
-    - name: Build
-      run: sudo go build -o /home/hendra/crcbackend ./cmd
-      
-    - name: Run app in background
-      run: sudo nohup ./home/hendra/crcbackend > backend.log 2>&1 &
-      
-    - name: Wait for backend to start
-      run: sleep 5
+      - name: Install dependencies
+        run: go mod tidy
 
-    - name: Test app with curl
-      run: |
-        curl http://127.0.0.1:8080/ || (echo "App not responding" && cat backend.log && exit 1)
-        
-        
+      - name: Build the application
+        run: go build -o myapp .
+
+      - name: Run tests
+        run: go test -v ./...
+
+  deploy:
+    runs-on: [self-hosted, linux]  # Menjalankan di self-hosted runner Linux
+    needs: build-test  # Hanya akan berjalan setelah build-test berhasil
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Copy binary to server
+        run: |
+          scp -i ${{ secrets.SSH_PRIVATE_KEY }} ./myapp hendra@192.168.23.56:/home/hendra/app
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Restart application on server
+        run: |
+          ssh -i ${{ secrets.SSH_PRIVATE_KEY }} hendra@192.168.23.56 'pm2 restart myapp'
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
 
       
 

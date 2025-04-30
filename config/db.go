@@ -19,6 +19,7 @@ func SetupDatabase(c *Configuration) *gorm.DB {
 		c.Postgres.PostgresParams,
 	)
 
+	log.Println(c.Postgres)
 	if c.Postgres.PostgresqlPassword != "" {
 		dataSourceName = fmt.Sprintf("host=%s user=%s dbname=%s dbpassword=%s port=%s sslmode=%s TimeZone=Asia/Jakarta",
 			c.Postgres.PostgresqlHost,
@@ -29,7 +30,6 @@ func SetupDatabase(c *Configuration) *gorm.DB {
 			c.Postgres.PostgresParams,
 		)
 	}
-	log.Println(dataSourceName)
 
 	db, err := gorm.Open(postgres.Open(dataSourceName), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Info),

@@ -42,7 +42,7 @@ jobs:
 
     - name: Test app with curl
       run: |
-        curl --fail http://localhost:8080/ || (echo "App not responding" && cat backend.log && exit 1)
+        curl --fail http://192.168.23.56:8080/ || (echo "App not responding" && cat backend.log && exit 1)
         
         
 

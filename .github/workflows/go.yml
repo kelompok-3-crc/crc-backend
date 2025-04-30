@@ -1,7 +1,4 @@
-# This workflow will build a golang project
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-go
-
-name: Go
+name: Go Server CI
 
 on:
   push:
@@ -10,24 +7,39 @@ on:
     branches: [ "main" ]
 
 jobs:
-
-  build:
-    runs-on: ubuntu-latest
+  build-and-run:
+    runs-on: self-hosted  # Gunakan self-hosted runner Linux kamu
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout repo
+      uses: actions/checkout@v4
 
-    - name: Set up Go
+    - name: Setup Go
       uses: actions/setup-go@v4
       with:
         go-version: '1.24.2'
 
-    - name: Build
-      run: go build -v ./...
+    - name: Build binary
+      run: |
+        go build -o my-app ./cmd/api/main.go
+        ls -lh
+        file my-app
+        chmod +x my-app
 
-    - name: Test
+    - name: Run tests
       run: go test -v ./...
 
-    - name: Jalankan server
+    - name: Run server (background)
       run: |
-        pkill -f ./my-app || true  
-        nohup ./my-app > server.log 2>&1 & 
+        pkill -f ./my-app || true
+        nohup ./my-app > server.log 2>&1 &
+        sleep 3  # beri waktu untuk booting server
+
+    - name: Cek apakah server berjalan
+      run: |
+        ps aux | grep my-app
+        curl --fail http://localhost:8080 || echo "Server tidak merespons di port 8080"
+
+    - name: Tampilkan log server
+      run: |
+        echo "===== Isi server.log ====="
+        tail -n 20 server.log || echo "Log belum tersedia"

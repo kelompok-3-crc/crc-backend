@@ -4,6 +4,8 @@ type PredictionRequest struct {
 	CIF                string   `json:"cif" validate:"required"`
 	Nama               string   `json:"name" validate:"required"`
 	NamaPerusahaan     string   `json:"company_name" validate:"required"`
+	NomorRekening      string   `json:"nomor_rekening" validate:"required"`
+	NomorHp            string   `json:"nomor_hp" validate:"required"`
 	Umur               int      `json:"umur" validate:"required"`
 	Penghasilan        int64    `json:"income" validate:"required"`
 	Payroll            bool     `json:"payroll" validate:"required"`

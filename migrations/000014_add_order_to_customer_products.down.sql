@@ -1,0 +1,6 @@
+ALTER TABLE customer_products 
+DROP COLUMN IF EXISTS "order",
+DROP COLUMN IF EXISTS plafon_min,
+DROP COLUMN IF EXISTS tenor_min,
+DROP COLUMN IF EXISTS plafon_max,
+DROP COLUMN IF EXISTS tenor_max;

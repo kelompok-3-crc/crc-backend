@@ -4,9 +4,9 @@ import (
 	"errors"
 	"fmt"
 	dto "ml-prediction/internal/app/domain"
-	"ml-prediction/internal/app/interfaces/repository"
-	"ml-prediction/internal/app/interfaces/usecase"
 	"ml-prediction/internal/app/model"
+	"ml-prediction/internal/app/repository"
+	repo "ml-prediction/internal/app/repository"
 	"ml-prediction/pkg/jwt"
 	"ml-prediction/pkg/utils"
 
@@ -14,12 +14,18 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-type authUsecase struct {
-	userRepo repository.UserRepository
+type AuthUsecase interface {
+	Login(c *fiber.Ctx, req dto.LoginRequest) (string, error)
+	CreateUser(c *fiber.Ctx, req dto.CreateRequest) (*model.User, error)
 }
 
-func NewAuthUsecase(userRepo repository.UserRepository) usecase.AuthUsecase {
-	return &authUsecase{userRepo}
+type authUsecase struct {
+	userRepo         repository.UserRepository
+	kantorCabangRepo repo.KantorCabangRepository
+}
+
+func NewAuthUsecase(userRepo repository.UserRepository, kantorCabangRepo repo.KantorCabangRepository) AuthUsecase {
+	return &authUsecase{userRepo, kantorCabangRepo}
 }
 
 func (s *authUsecase) Login(c *fiber.Ctx, req dto.LoginRequest) (string, error) {
@@ -51,7 +57,16 @@ func (s *authUsecase) CreateUser(c *fiber.Ctx, req dto.CreateRequest) (*model.Us
 		return nil, errors.New("user dengan nama yang diberikan telah ada")
 	}
 
-	// Hash password
+	// if req.KantorCabangID != "" {
+	// 	exists, err := s.kantorCabangRepo.ExistsById(c, req.KantorCabangID)
+	// 	if err != nil && !exists {
+	// 		return nil, err
+	// 	}
+	// }
+	if exists {
+		return nil, errors.New("user dengan nama yang diberikan telah ada")
+	}
+
 	hashed, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return nil, err
@@ -61,11 +76,18 @@ func (s *authUsecase) CreateUser(c *fiber.Ctx, req dto.CreateRequest) (*model.Us
 		Role:     req.Role,
 		Password: string(hashed),
 	}
+	if req.KantorCabangID != 0 || req.Role != "admin" {
+		kantorCabang, err := s.kantorCabangRepo.FindById(c, req.KantorCabangID)
+		if err != nil {
+			return nil, err
+		}
+		user.KantorCabangID = &kantorCabang.ID
+	}
 
-	user, err = s.userRepo.CreateUser(c, user)
+	data, err := s.userRepo.CreateUser(c, user)
 	if err != nil {
 		return nil, err
 	}
 
-	return user, nil
+	return data, nil
 }

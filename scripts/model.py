@@ -2,10 +2,13 @@ import joblib
 import json
 import sys
 import pandas as pd
+import os
+
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 required_features = ['umur', 'monthly_income', 'payroll', 'gender_MALE', 'marital_status_Single', 'transaction_activity_Inactive', 'categorysegmen_BUMN', 'categorysegmen_Lembaga Negara', 'categorysegmen_Non Target Market', 'categorysegmen_Pendidikan', 'categorysegmen_Pensiun', 'categorysegmen_RS', 'categorysegmen_Swasta']
 produk_list=['mitraguna', 'hasanahcard', 'griya', 'oto', 'pensiun', 'prapensiun']
-scaler = joblib.load('scripts/scaler.pkl')
+scaler = joblib.load(os.path.join(SCRIPT_DIR, 'scaler.pkl'))
 
 def predict_final_deploy(data_user):
     input_dict = {
@@ -34,7 +37,7 @@ def predict_final_deploy(data_user):
     input_data = input_data[required_features]
     input_data[['umur', 'monthly_income']] = scaler.transform(input_data[['umur', 'monthly_income']])
 
-    model = joblib.load('scripts/xgb_model.pkl')
+    model = joblib.load(os.path.join(SCRIPT_DIR, 'final_model_xgboost.pkl'))
     pred_probs = model.predict_proba(input_data)
     pred_proba = {}
     for i, produk in enumerate(produk_list):

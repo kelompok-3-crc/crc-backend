@@ -1,0 +1,4 @@
+
+DELETE FROM products;
+ALTER TABLE products DROP COLUMN IF EXISTS ikon;
+ALTER TABLE products DROP COLUMN IF EXISTS prediksi;

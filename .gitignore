@@ -61,7 +61,6 @@ logs/
 *.pid
 tmp/
 temp/
-*.sql
 
 # Docker
 docker-compose.override.yml
@@ -77,3 +76,6 @@ pnpm-debug.log*
 # JetBrains IDE (GoLand)
 *.iml
 .idea/
+
+.air.toml
+venv/

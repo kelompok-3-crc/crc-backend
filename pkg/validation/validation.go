@@ -3,25 +3,32 @@ package validation
 import (
 	"fmt"
 	"mime/multipart"
+	dto "ml-prediction/internal/app/domain"
+	"ml-prediction/internal/app/model"
 	"net/http"
 	"reflect"
 	"regexp"
 	"strings"
 
 	"github.com/go-playground/validator/v10"
+	"gorm.io/gorm"
 )
 
-// MapValidationErrors maps validator errors into a field-to-message map.
-func MapValidationErrors(err error) map[string]string {
+func MapValidationErrors(err error, obj interface{}) map[string]string {
 	errors := make(map[string]string)
 	if verrs, ok := err.(validator.ValidationErrors); ok {
+		objType := reflect.TypeOf(obj)
+		if objType.Kind() == reflect.Ptr {
+			objType = objType.Elem()
+		}
 		for _, e := range verrs {
-			// Use the JSON tag name if available
-			field := e.Field()
-			if jsonTag := e.StructField(); jsonTag != "" {
-				field = strings.ToLower(jsonTag)
+			field, _ := objType.FieldByName(e.StructField())
+			jsonTag := field.Tag.Get("json")
+			jsonField := strings.Split(jsonTag, ",")[0] // handles omitempty
+			if jsonField == "" {
+				jsonField = strings.ToLower(e.Field())
 			}
-			errors[strings.ToLower(field)] = getErrorMessage(e)
+			errors[jsonField] = getErrorMessage(e)
 		}
 	}
 	return errors
@@ -61,12 +68,20 @@ func getErrorMessage(e validator.FieldError) string {
 		return "Harus berupa UUID yang valid"
 	case "oneof":
 		return fmt.Sprintf("Harus salah satu dari [%s]", e.Param())
+	case "exists":
+		value := e.Value()
+		valueStr := fmt.Sprintf("%v", value)
+		parts := strings.Split(e.Param(), ".")
+		return fmt.Sprintf("%s dengan nilai %s tidak ditemukan di %s", parts[1], valueStr, parts[0])
+	case "all_products":
+		return "Harus mengisi target untuk semua produk aktif"
+
 	default:
 		return "Nilai tidak valid"
 	}
 }
 
-func RegisterCustomValidation(v *validator.Validate) error {
+func RegisterCustomValidation(v *validator.Validate, db *gorm.DB) error {
 	if err := v.RegisterValidation("fileformat", fileFormatValidator); err != nil {
 		return fmt.Errorf("failed to register file format validation: %s", err)
 	}
@@ -79,11 +94,47 @@ func RegisterCustomValidation(v *validator.Validate) error {
 		return fmt.Errorf("failed to register boolean validation: %s", err)
 	}
 
+	if err := v.RegisterValidation("exists", ExistsValidator(db)); err != nil {
+		return fmt.Errorf("failed to register exist validation: %s", err)
+	}
+
+	if err := v.RegisterValidation("all_products", ProductTargetValidator(db)); err != nil {
+		return fmt.Errorf("failed to register product target validator: %s", err)
+	}
+
 	if err := v.RegisterValidation("noSpace", validateNoSpace); err != nil {
 		return fmt.Errorf("failed to register username has space: %s", err)
 	}
 
 	return nil
+}
+
+// Add this new function
+func ProductTargetValidator(db *gorm.DB) validator.Func {
+	return func(fl validator.FieldLevel) bool {
+		targets, ok := fl.Field().Interface().([]dto.ProductTarget)
+		if !ok {
+			return false
+		}
+
+		var products []model.Product
+		if err := db.Find(&products).Error; err != nil {
+			return false
+		}
+
+		targetMap := make(map[uint]bool)
+		for _, t := range targets {
+			targetMap[t.ProductID] = true
+		}
+
+		for _, p := range products {
+			if !targetMap[p.ID] {
+				return false
+			}
+		}
+
+		return true
+	}
 }
 
 func CustomError(e validator.FieldError) string {
@@ -123,7 +174,7 @@ func imageMaxSizeValidator(fl validator.FieldLevel) bool {
 	if !ok {
 		return false
 	}
-	maxSize := int64(2) // 2MB
+	maxSize := int64(2)
 	return file.Size <= maxSize
 }
 
@@ -220,4 +271,27 @@ func ValidateParams(r *http.Request, fields interface{}) error {
 		}
 	}
 	return nil
+}
+
+func ExistsValidator(db *gorm.DB) validator.Func {
+	return func(fl validator.FieldLevel) bool {
+		param := fl.Param()
+		parts := strings.Split(param, ".")
+		if len(parts) != 2 {
+			return false
+		}
+
+		table, column := parts[0], parts[1]
+		value := fl.Field().Interface()
+
+		// Execute raw query to verify exactly what's being checked
+		var exists bool
+		query := fmt.Sprintf("SELECT EXISTS(SELECT 1 FROM %s WHERE %s = ?)", table, column)
+		err := db.Raw(query, value).Scan(&exists).Error
+		if err != nil {
+			return false
+		}
+
+		return exists
+	}
 }

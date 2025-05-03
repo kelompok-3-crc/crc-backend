@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"ml-prediction/config"
-	"ml-prediction/internal/app/model"
 	"ml-prediction/internal/app/routes"
 	"ml-prediction/pkg/logger"
 	"ml-prediction/pkg/validation"
@@ -22,9 +21,8 @@ func Run() {
 	var validate *validator.Validate
 
 	db := config.SetupDatabase(cfg)
-	db.AutoMigrate(&model.User{}, &model.Customer{})
 	validate = validator.New()
-	if err := validation.RegisterCustomValidation(validate); err != nil {
+	if err := validation.RegisterCustomValidation(validate, db); err != nil {
 		log.Fatalf("error register custom validation")
 	}
 

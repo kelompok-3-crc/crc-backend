@@ -2,11 +2,12 @@ package handler
 
 import (
 	"ml-prediction/config"
-	dto "ml-prediction/internal/app/domain"
-	"ml-prediction/internal/app/interfaces/usecase"
-
+	"ml-prediction/internal/app/usecase"
+	"ml-prediction/pkg/helper"
 	"ml-prediction/pkg/response"
 	"ml-prediction/pkg/validation"
+
+	dto "ml-prediction/internal/app/domain"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
@@ -26,14 +27,15 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 	var req dto.LoginRequest
 
 	if err := c.BodyParser(&req); err != nil {
-		return response.Error(c, fiber.StatusBadRequest, "Input yang diberikan bermasalah", "Input yang diberikan bermasalah")
+		errors := helper.MapUnmarshalErrors(err)
+		return response.ErrorValidation(c, fiber.StatusBadRequest, "Format JSON tidak valid", errors)
 	}
-
 	if err := h.val.Struct(&req); err != nil {
 		if errs, ok := err.(validator.ValidationErrors); ok {
-			errors := validation.MapValidationErrors(errs)
+			errors := validation.MapValidationErrors(errs, &req)
 			return response.ErrorValidation(c, fiber.StatusBadRequest, "Kesalahan Validasi", errors)
 		}
+
 		return response.Error(c, fiber.StatusBadRequest, "Kesalahan Validasi", err.Error())
 	}
 
@@ -43,7 +45,7 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 	}
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
-		"success": false,
+		"success": true,
 		"message": "Login berhasil!",
 		"token":   res,
 	})
@@ -51,18 +53,19 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 
 func (h *AuthHandler) CreateUser(c *fiber.Ctx) error {
 	var req dto.CreateRequest
-	if err := c.BodyParser(&req); err != nil {
-		return response.Error(c, fiber.StatusBadRequest, "Input tidak sesuai", "Input yang diberikan tidak sesuai")
-	}
 
+	if err := c.BodyParser(&req); err != nil {
+		errors := helper.MapUnmarshalErrors(err)
+		return response.ErrorValidation(c, fiber.StatusBadRequest, "Format JSON tidak valid", errors)
+	}
 	if err := h.val.Struct(&req); err != nil {
 		if errs, ok := err.(validator.ValidationErrors); ok {
-			errors := validation.MapValidationErrors(errs)
+			errors := validation.MapValidationErrors(errs, &req)
 			return response.ErrorValidation(c, fiber.StatusBadRequest, "Kesalahan Validasi", errors)
 		}
+
 		return response.Error(c, fiber.StatusBadRequest, "Kesalahan Validasi", err.Error())
 	}
-
 	user, err := h.AuthUsecase.CreateUser(c, req)
 	if err != nil {
 		return response.Error(c, fiber.StatusConflict, "Gagal registrasi", err.Error())

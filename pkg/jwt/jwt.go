@@ -8,13 +8,11 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-var (
-	accessSecret = []byte(os.Getenv("ACCESS_SECRET"))
-)
+var accessSecret = []byte(os.Getenv("ACCESS_SECRET"))
 
 type Claim struct {
 	jwt.Claims
-	UserId string `json:"user_id"`
+	NIP string `json:"nip"`
 }
 
 type JWTToken struct {

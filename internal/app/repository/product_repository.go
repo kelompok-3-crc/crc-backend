@@ -10,6 +10,7 @@ import (
 
 type ProductRepository interface {
 	FindByPrediksi(name string) (*model.Product, error)
+	GetAllProducts() ([]model.Product, error)
 }
 type productRepository struct {
 	db  *gorm.DB
@@ -28,4 +29,13 @@ func (r *productRepository) FindByPrediksi(prediksi string) (*model.Product, err
 		return nil, fmt.Errorf("product with prediksi '%s' not found: %v", prediksi, err)
 	}
 	return &product, nil
+}
+
+// GetAllProducts retrieves all products from the database.
+func (r *productRepository) GetAllProducts() ([]model.Product, error) {
+	var products []model.Product
+	if err := r.db.Find(&products).Error; err != nil {
+		return nil, err
+	}
+	return products, nil
 }

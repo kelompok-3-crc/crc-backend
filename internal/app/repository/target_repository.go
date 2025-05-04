@@ -337,7 +337,7 @@ func (r *targetRepository) GetTargetSummary(tx *gorm.DB, userID uint, role strin
 	} else {
 		response.BranchName = branch.Nama
 	}
-	response.Type = "branch_manager"
+	response.Type = "bm"
 	if role == "marketing" {
 		response.Type = "marketing"
 	}

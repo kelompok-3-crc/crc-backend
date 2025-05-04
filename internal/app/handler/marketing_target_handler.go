@@ -34,6 +34,12 @@ func (h *MarketingTargetHandler) AssignMarketingTarget(c *fiber.Ctx) error {
 		return response.ErrorValidation(c, fiber.StatusBadRequest, "Format JSON tidak valid", errors)
 	}
 
+	marketingNIP := c.Params("nip")
+	if marketingNIP == "" {
+		return response.Error(c, fiber.StatusBadRequest, "NIP tidak valid", "NIP harus diisi")
+	}
+	req.MarketingNIP = marketingNIP
+
 	if err := h.val.Struct(&req); err != nil {
 		if errs, ok := err.(validator.ValidationErrors); ok {
 			errors := validation.MapValidationErrors(errs, &req)

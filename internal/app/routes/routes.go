@@ -39,7 +39,12 @@ func Register(api fiber.Router, db *gorm.DB, cfg config.Configuration, log *zap.
 	marketingCustomerUsecase := usecase.NewMarketingCustomerUsecase(marketingCustomerRepo, userRepo, db)
 	marketingCustomerHandler := handler.NewMarketingCustomerHandler(marketingCustomerUsecase, cfg, val)
 
+	productUsecase := usecase.NewProductUsecase(productRepo)
+	productHandler := handler.NewProductHandler(productUsecase)
+
+	// Register routes.
 	auth := api.Group("/auth")
+	api.Get("/produk", middleware.JWTMiddleware("admin", "bm", "marketing"), productHandler.GetAllProducts)
 	auth.Post("/login", authHandler.Login)
 	auth.Post("/create", middleware.JWTMiddleware("admin"), authHandler.CreateUser)
 

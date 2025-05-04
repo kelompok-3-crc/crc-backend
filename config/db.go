@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"log"
 	"ml-prediction/internal/app/model"
+	"os"
+	"path/filepath"
 
 	"github.com/golang-migrate/migrate/v4"
 	migrate_postgres "github.com/golang-migrate/migrate/v4/database/postgres"
@@ -41,9 +43,14 @@ func SetupDatabase(c *Configuration) *gorm.DB {
 	if err != nil {
 		log.Fatalf("could not create postgres driver: %v", err)
 	}
-
+	wd, err := os.Getwd()
+	if err != nil {
+		log.Fatalf("failed to get working directory: %v", err)
+	}
+	fmt.Println("Current working directory:", wd)
+	migrationsPath := "file://" + filepath.Join(wd, "migrations")
 	m, err := migrate.NewWithDatabaseInstance(
-		"file://./migrations",
+		migrationsPath,
 		c.Postgres.PostgresqlDbname,
 		driver,
 	)

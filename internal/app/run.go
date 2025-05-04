@@ -14,11 +14,21 @@ import (
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 )
 
 func Run() {
 
+	cors := cors.New(cors.Config{
+		AllowOrigins:     "*",
+		AllowHeaders:     "Origin, Content-Type, Accept, Authorization",
+		AllowMethods:     "GET, POST, PUT, DELETE, OPTIONS",
+		AllowCredentials: false,
+		ExposeHeaders:    "Content-Length, X-Total-Count",
+		MaxAge:           3600,
+	})
 	app := fiber.New()
+	app.Use(cors)
 	cfg := config.NewConfig()
 	var validate *validator.Validate
 

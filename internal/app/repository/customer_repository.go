@@ -71,21 +71,21 @@ func (r *customerRepository) GetNewCustomers(req *dto.CustomerSearchRequest) ([]
 		switch req.SearchBy {
 		case "cif":
 			query = query.Where("cif LIKE ?", "%"+req.Search+"%")
-		case "phone":
-			query = query.Where("phone LIKE ?", "%"+req.Search+"%")
+		case "nomor_hp":
+			query = query.Where("nomor_hp LIKE ?", "%"+req.Search+"%")
 		case "nama":
 			query = query.Where("nama LIKE ?", "%"+req.Search+"%")
-		case "account":
-			query = query.Where("account_number LIKE ?", "%"+req.Search+"%")
-		case "existing_product":
-			query = query.Where("existing_product LIKE ?", "%"+req.Search+"%")
-		case "product":
-			query = query.Where("product LIKE ?", "%"+req.Search+"%")
+		case "nomor_rekening":
+			query = query.Where("nomor_rekening LIKE ?", "%"+req.Search+"%")
+		case "produk_eksisting":
+			query = query.Where("array_to_string(produk_eksisting, ',') ILIKE ?", "%"+req.Search+"%")
+		// case "product":
+		// 	query = query.Where("product LIKE ?", "%"+req.Search+"%")
 		default:
 			query = query.Where(
-				"cif LIKE ? OR phone LIKE ? OR nama LIKE ? OR account_number LIKE ? OR existing_product LIKE ? OR product LIKE ?",
+				"cif ILIKE ? OR nomor_hp LIKE ? OR nama ILIKE ? OR nomor_rekening ILIKE ? OR array_to_string(produk_eksisting, ',')  ILIKE ?",
 				"%"+req.Search+"%", "%"+req.Search+"%", "%"+req.Search+"%",
-				"%"+req.Search+"%", "%"+req.Search+"%", "%"+req.Search+"%",
+				"%"+req.Search+"%", "%"+req.Search+"%",
 			)
 		}
 	}

@@ -89,11 +89,6 @@ func (u *marketingCustomerUsecase) UpdateCustomerStatus(req *dto.UpdateCustomerS
 			tx.Rollback()
 			return fmt.Errorf("product dan amount harus diisi untuk status closed")
 		}
-	case string(model.CustomerStatusRejected):
-		if req.Notes == "" {
-			tx.Rollback()
-			return fmt.Errorf("notes harus diisi untuk status rejected")
-		}
 	}
 
 	// Update status and related fields
@@ -101,8 +96,6 @@ func (u *marketingCustomerUsecase) UpdateCustomerStatus(req *dto.UpdateCustomerS
 	if req.Status == string(model.CustomerStatusClosed) {
 		mc.ProductID = req.ProductID
 		mc.Amount = req.Amount
-	} else if req.Status == string(model.CustomerStatusRejected) {
-		mc.Notes = req.Notes
 	}
 
 	if err := u.marketingCustomerRepo.UpdateStatusWithTx(tx, mc); err != nil {

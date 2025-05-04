@@ -9,8 +9,8 @@ type CustomerProduct struct {
 	Produk     Product  `gorm:"foreignKey:ProductID" json:"produk"`
 	Order      int      `gorm:"column:order;default:0" json:"order"`
 	PlafonMin  *uint64  `gorm:"" json:"plafon_min"`
-	TenorMin   *string  `gorm:"type:varchar(100);" json:"tenor_min"`
-	PlafonMax  *string  `gorm:"type:varchar(100);" json:"plafon_max"`
-	TenorMax   *string  `gorm:"type:varchar(100);" json:"tenor_max"`
+	TenorMin   *int     `gorm:"type:int;" json:"tenor_min"`
+	PlafonMax  *uint64  `gorm:"type:int;" json:"plafon_max"`
+	TenorMax   *int     `gorm:"type:int;" json:"tenor_max"`
 	CreatedAt  time.Time
 }

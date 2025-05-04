@@ -19,14 +19,16 @@ type AssignedCustomerRequest struct {
 	Page   int    `json:"page" query:"page"`
 	Limit  int    `json:"limit" query:"limit"`
 	Status string `json:"status" query:"status"`
+	Search string `json:"search" query:"search"`
 }
 
 type CustomerProductResponse struct {
-	ID       uint   `json:"id"`
-	Nama     string `json:"nama"`
-	Ikon     string `json:"ikon"`
-	Prediksi string `json:"prediksi"`
-	Order    int    `json:"order"`
+	ID        uint   `json:"id"`
+	Nama      string `json:"nama"`
+	Ikon      string `json:"ikon"`
+	Prediksi  string `json:"prediksi"`
+	PlafonMax uint64 `json:"plafon_max"`
+	Order     int    `json:"order"`
 }
 
 type Customer struct {
@@ -40,17 +42,19 @@ type Customer struct {
 	NomorHp            string         `gorm:"type:varchar(20)"  json:"nomor_hp"`
 	Segmen             string         `gorm:"type:varchar(20)"  json:"segmen"`
 	Address            string         `gorm:"type:text"  json:"alamat"`
-	Job                string         `gorm:"type:varchar(100)"  json:"pekerjaan"`
+	Job                string         `gorm:"type:varchar(100);column:job"  json:"pekerjaan"`
+	Email              string         `gorm:"type:varchar(50)"  json:"email"`
 	Penghasilan        int64          `gorm:"type:int"  json:"penghasilan"`
 	Umur               int            `gorm:"type:int"  json:"umur"`
 	Gender             string         `gorm:"type:varchar(10)"  json:"gender"`
 	StatusPerkawinan   bool           `gorm:"type:boolean"  json:"status_perkawinan"`
-	Payroll            bool           `gorm:"type:boolean"  json:"payroll"`
+	Payroll            bool           `gorm:"type:boolean"  json:"payroll,omitempty"`
 
 	Status              string    `gorm:"type:sting"  json:"status"`
 	Notes               string    `json:"catatan"`
 	MarketingCustomerID uint      `json:"marketing_customer_id,omitempty" gorm:"column:marketing_customer_id"`
 	MarketingID         uint      `json:"marketing_id,omitempty" gorm:"column:marketing_id"`
+	ClosedAmount        uint      `json:"closed_amount,omitempty" gorm:"column:closed_amount"`
 	MCCreatedAt         time.Time `json:"mc_created_at,omitempty" gorm:"column:mc_created_at"`
 
 	CreatedAt time.Time                 ` json:"created_at"`

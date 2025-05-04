@@ -53,6 +53,10 @@ func (u *marketingTargetUsecase) AssignBulkMarketingTarget(req *dto.AssignMarket
 		tx.Rollback()
 		return fmt.Errorf("marketing tidak ditemukan")
 	}
+	if marketing.Role != "marketing" {
+		tx.Rollback()
+		return fmt.Errorf("target marketing hanya dapat ditetapkan kepada user dengan role 'marketing'")
+	}
 	if marketing.KantorCabangID == nil || *marketing.KantorCabangID != *bm.KantorCabangID {
 		tx.Rollback()
 		return fmt.Errorf("marketing tidak berada dalam kantor cabang yang sama")
@@ -76,7 +80,7 @@ func (u *marketingTargetUsecase) AssignBulkMarketingTarget(req *dto.AssignMarket
 			return fmt.Errorf("target bulanan cabang tidak ditemukan untuk produk %d", target.ProductID)
 		}
 
-		currentSum, err := u.targetRepo.GetMarketingTargetSumWithTx(tx, req.Tahun, req.Bulan, *bm.KantorCabangID, target.ProductID)
+		currentSum, err := u.targetRepo.GetMarketingTargetSumWithTx(tx, req.Tahun, req.Bulan, *bm.KantorCabangID, target.ProductID, marketing.ID)
 		if err != nil {
 			tx.Rollback()
 			return fmt.Errorf("gagal mendapatkan total target marketing: %v", err)

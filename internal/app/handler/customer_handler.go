@@ -82,11 +82,13 @@ func (h *CustomerHandler) GetAssignedCustomers(c *fiber.Ctx) error {
 	page, _ := strconv.Atoi(c.Query("page", "1"))
 	limit, _ := strconv.Atoi(c.Query("limit", "10"))
 	status := c.Query("status", "all")
+	search := c.Query("search", "")
 
 	req := dto.AssignedCustomerRequest{
 		Page:   page,
 		Limit:  limit,
 		Status: status,
+		Search: search,
 	}
 	NIP := c.Locals("nip").(string)
 

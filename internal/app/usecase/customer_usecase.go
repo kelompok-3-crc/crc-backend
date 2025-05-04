@@ -106,6 +106,9 @@ func (s *customerUsecase) Create(c *fiber.Ctx, req dto.PredictionRequest) (*mode
 		Segmen:             req.Segmen,
 		ProdukEksisting:    req.ProdukEksisting,
 		AktivitasTransaksi: req.AktivitasTransaksi,
+		Email:              req.Email,
+		Address:            req.Alamat,
+		Job:                req.Pekerjaan,
 	}
 
 	tx := s.db.WithContext(c.Context()).Begin()
@@ -124,11 +127,16 @@ func (s *customerUsecase) Create(c *fiber.Ctx, req dto.PredictionRequest) (*mode
 			return nil, errors.New(fmt.Sprintf("Gagal menemukan produk: %v", err))
 		}
 
+		plafond := CalculatePlafond(produk.Prediksi, int64(data.Umur), data.Penghasilan, data.Payroll)
 		// Create a product relationship with customer ID
 		customerProd := &model.CustomerProduct{
 			CustomerID: data.Id,
 			ProductID:  produk.ID,
 			Order:      int(i + 1),
+			PlafonMin:  &plafond.MinPlafon,
+			PlafonMax:  &plafond.MaxPlafon,
+			TenorMin:   &plafond.MinTenor,
+			TenorMax:   &plafond.MaxTenor,
 		}
 
 		if err := tx.Create(customerProd).Error; err != nil {
@@ -190,4 +198,118 @@ func (u *customerUsecase) GetCustomerDetail(ctx context.Context, NIP string, cus
 	}
 
 	return u.custPredRepo.GetCustomerDetail(user.ID, customerID)
+}
+
+type Plafond struct {
+	MinPlafon uint64
+	MaxPlafon uint64
+	MinTenor  int
+	MaxTenor  int
+}
+
+func CalculatePlafond(produk string, umur, penghasilan int64, payroll bool) Plafond {
+	if produk == "mitraguna" {
+		penghasilan := float64(penghasilan)
+		minPlafon := 0.7 * penghasilan * 12
+		maxPlafon := 0.7 * penghasilan * 15 * 12
+		minTenor := 12
+		maxTenor := 15 * 12
+
+		return Plafond{
+			MinPlafon: uint64(minPlafon),
+			MaxPlafon: uint64(maxPlafon),
+			MinTenor:  minTenor,
+			MaxTenor:  maxTenor,
+		}
+	}
+
+	if produk == "pensiun" {
+		const PriceAkhirPensiun = 1000
+		tenorMaks := (75 - int(umur)) * 12
+		angsuranMaks := 0.9 * float64(penghasilan)
+		plafondMaks := angsuranMaks * PriceAkhirPensiun
+
+		return Plafond{
+			MinPlafon: 0,
+			MaxPlafon: uint64(plafondMaks),
+			MinTenor:  0,
+			MaxTenor:  tenorMaks,
+		}
+	}
+
+	if produk == "griya" {
+		const DSR = 0.4
+		const MARGIN = 0.1
+		const MIN_TENOR = 12
+		const MAX_TENOR = 300
+
+		angsuranMaks := float64(penghasilan) * DSR
+
+		tenorBulanMax := float64(MAX_TENOR)
+		plafonMax := (angsuranMaks * tenorBulanMax) / (1 + (MARGIN * tenorBulanMax / 12))
+
+		tenorBulanMin := float64(MIN_TENOR)
+		plafonMin := (angsuranMaks * tenorBulanMin) / (1 + (MARGIN * tenorBulanMin / 12))
+
+		return Plafond{
+			MinPlafon: uint64(plafonMin),
+			MaxPlafon: uint64(plafonMax),
+			MinTenor:  MIN_TENOR,
+			MaxTenor:  MAX_TENOR,
+		}
+	}
+
+	if produk == "oto" {
+		const DSR = 0.5
+		const MARGIN = 0.075
+		const MIN_TENOR = 12
+		const MAX_TENOR = 60
+
+		angsuranMaks := float64(penghasilan) * DSR
+
+		tenorBulanMax := float64(MAX_TENOR)
+		pokokPembiayaanMax := (angsuranMaks * tenorBulanMax) / (1 + (MARGIN * tenorBulanMax / 12))
+
+		tenorBulanMin := float64(MIN_TENOR)
+		pokokPembiayaanMin := (angsuranMaks * tenorBulanMin) / (1 + (MARGIN * tenorBulanMin / 12))
+
+		return Plafond{
+			MinPlafon: uint64(pokokPembiayaanMin),
+			MaxPlafon: uint64(pokokPembiayaanMax),
+			MinTenor:  MIN_TENOR,
+			MaxTenor:  MAX_TENOR,
+		}
+	}
+	if produk == "hasanahcard" {
+		var faktorLimit float64
+
+		if umur < 35 {
+			faktorLimit = 2.5
+		} else if umur >= 35 && umur < 45 {
+
+			faktorLimit = 2.0
+		} else if umur >= 45 && umur < 60 {
+
+			faktorLimit = 1.5
+		} else {
+			faktorLimit = 1.0
+		}
+
+		plafonMax := float64(penghasilan) * faktorLimit
+
+		plafonMin := float64(penghasilan) * 1.0
+
+		return Plafond{
+			MinPlafon: uint64(plafonMin),
+			MaxPlafon: uint64(plafonMax),
+			MinTenor:  0,
+			MaxTenor:  0,
+		}
+	}
+	return Plafond{
+		MinPlafon: 0,
+		MaxPlafon: 0,
+		MinTenor:  0,
+		MaxTenor:  0,
+	}
 }

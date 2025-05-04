@@ -19,7 +19,7 @@ type TargetRepository interface {
 	CreateMarketingTarget(t *model.MarketingTargetBulanan) error
 	ListMarketingInKantorCabang(kantorID uint) ([]model.User, error)
 	GetTargetBulananWithTx(tx *gorm.DB, tahun, bulan int, kantorCabangID, productID uint) (*model.TargetProdukBulanan, error)
-	GetMarketingTargetSumWithTx(tx *gorm.DB, tahun, bulan int, kantorCabangID, productID uint) (int64, error)
+	GetMarketingTargetSumWithTx(tx *gorm.DB, tahun, bulan int, kantorCabangID, productID uint, excludeMarketingID uint) (int64, error)
 	CreateMarketingTargetWithTx(tx *gorm.DB, target *model.MarketingTargetBulanan) error
 	UpdateMarketingTargetWithTx(tx *gorm.DB, target *model.MarketingTargetBulanan) error
 	GetExistingMarketingTargetsWithTx(tx *gorm.DB, tahun, bulan int, marketingID uint) ([]model.MarketingTargetBulanan, error)
@@ -98,16 +98,15 @@ func (r *targetRepository) GetTargetBulananWithTx(tx *gorm.DB, tahun, bulan int,
 	return &target, nil
 }
 
-func (r *targetRepository) GetMarketingTargetSumWithTx(tx *gorm.DB, tahun, bulan int, kantorCabangID, productID uint) (int64, error) {
+func (r *targetRepository) GetMarketingTargetSumWithTx(tx *gorm.DB, tahun, bulan int, kantorCabangID, productID uint, excludeMarketingID uint) (int64, error) {
 	var sum int64
 	err := tx.Model(&model.MarketingTargetBulanan{}).
-		Where("tahun = ? AND bulan = ? AND kantor_cabang_id = ? AND product_id = ?",
-			tahun, bulan, kantorCabangID, productID).
+		Where("tahun = ? AND bulan = ? AND kantor_cabang_id = ? AND product_id = ? AND marketing_id <> ?",
+			tahun, bulan, kantorCabangID, productID, excludeMarketingID).
 		Select("COALESCE(SUM(target_amount), 0)").
 		Scan(&sum).Error
 	return sum, err
 }
-
 func (r *targetRepository) CreateMarketingTargetWithTx(tx *gorm.DB, target *model.MarketingTargetBulanan) error {
 	return tx.Create(target).Error
 }

@@ -19,6 +19,7 @@ type Customer struct {
 	Segmen             string             `gorm:"type:varchar(20)"  json:"segmen"`
 	Address            string             `gorm:"type:text"  json:"alamat"`
 	Job                string             `gorm:"type:varchar(100)"  json:"pekerjaan"`
+	Email              string             `gorm:"type:varchar(50)"  json:"email"`
 	Penghasilan        int64              `gorm:"type:int"  json:"penghasilan"`
 	Umur               int                `gorm:"type:int"  json:"umur"`
 	Gender             string             `gorm:"type:varchar(10)"  json:"gender"`

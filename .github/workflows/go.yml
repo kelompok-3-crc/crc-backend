@@ -9,9 +9,9 @@ on:
       - main
 
 jobs:
-  build-test-deploy:
-    runs-on: self-hosted  # Semua langkah dijalankan di self-hosted runner
-
+  build-and-deploy:
+    runs-on: self-hosted
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -25,16 +25,95 @@ jobs:
         run: go mod tidy
 
       - name: Build the application
-        run: go build -o myapp ./cmd
+        run: go build -trimpath -o myapp ./cmd
 
       - name: Run tests
         run: go test -v ./...
 
-      - name: Deploy binary locally (runner = server target)
+      - name: Prepare deployment files
+        run: |
+          mkdir -p deployment
+          cp myapp deployment/ || echo "myapp not found"
+          cp requirements.txt deployment/ || echo "requirements.txt not found"
+          cp data.csv deployment/ || echo "data.csv not found"
+          
+          if [ -d "./migrations" ]; then
+            mkdir -p deployment/migrations
+            cp -r ./migrations/* deployment/migrations/
+          else
+            echo "migrations folder not found"
+          fi
+          
+          if [ -d "./scripts" ]; then
+            mkdir -p deployment/scripts
+            cp -r ./scripts/* deployment/scripts/
+          else
+            echo "scripts folder not found"
+          fi
+
+      - name: Deploy application locally
         run: |
           mkdir -p /home/hendra/app
-          cp ./myapp /home/hendra/app/
-      
+          cp deployment/myapp /home/hendra/app/ || echo "myapp not found in deployment"
+          cp deployment/requirements.txt /home/hendra/app/ || echo "requirements.txt not found in deployment"
+          cp deployment/data.csv /home/hendra/app/ || echo "data.csv not found in deployment"
+          
+          if [ -d "deployment/migrations" ]; then
+            mkdir -p /home/hendra/app/migrations
+            cp -r deployment/migrations/* /home/hendra/app/migrations/
+          else
+            echo "migrations folder not found in deployment"
+          fi
+          
+          if [ -d "deployment/scripts" ]; then
+            mkdir -p /home/hendra/app/scripts
+            cp -r deployment/scripts/* /home/hendra/app/scripts/
+          else
+            echo "scripts folder not found in deployment"
+          fi
+
+      - name: Setup Python 3.11
+        run: |
+          if command -v python3.11 &> /dev/null; then
+            echo "Python 3.11 already installed"
+          else
+            echo "Installing Python 3.11"
+            # Add appropriate installation commands here
+          fi
+
+      - name: Create Python virtual environment
+        working-directory: /home/hendra/app
+        run: |
+          rm -rf venv || true
+          python3.11 -m venv venv || echo "Failed to create virtual environment"
+
       - name: Restart application using systemd
         run: |
           sudo systemctl restart myapp.service
+
+      - name: Verify application is running on port 8080
+        run: |
+          sleep 10
+          if curl -s http://localhost:8080 -o /dev/null; then
+            echo "Application is running correctly on port 8080"
+          else
+            sudo systemctl status myapp.service || true
+            netstat -tuln | grep 8080 || true
+            exit 1
+          fi
+
+      - name: Final deployment verification
+        run: |
+          if sudo systemctl is-active --quiet myapp.service; then
+            echo "Service is active"
+          else
+            echo "Service is not active"
+            exit 1
+          fi
+          if netstat -tuln | grep -q :8080; then
+            echo "Port 8080 is open and listening"
+          else
+            echo "Port 8080 is not open"
+            exit 1
+          fi
+          echo "Deployment verification completed successfully"

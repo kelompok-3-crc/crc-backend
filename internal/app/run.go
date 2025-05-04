@@ -1,11 +1,13 @@
 package app
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"ml-prediction/config"
 	"ml-prediction/internal/app/routes"
 	"ml-prediction/pkg/logger"
+	"ml-prediction/pkg/utils"
 	"ml-prediction/pkg/validation"
 	"os"
 	"os/signal"
@@ -29,6 +31,11 @@ func Run() {
 	logger, err := logger.Initialize(*cfg)
 	if err != nil {
 		log.Fatalf("failed to initialize logger: %v", err)
+	}
+
+	err = utils.ImportInitialCustomerData(context.Background(), db)
+	if err != nil {
+		log.Fatalf("failed to run import data: %v", err)
 	}
 
 	api := app.Group("/api/v1")

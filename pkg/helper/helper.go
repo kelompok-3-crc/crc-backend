@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 )
 
@@ -38,26 +37,10 @@ func MapUnmarshalErrors(err error) map[string]string {
 	return errors
 }
 func GetProjectRoot() (string, error) {
-	// First try environment variable
-	if root := os.Getenv("APP_ROOT"); root != "" {
-		return root, nil
-	}
-
-	// Fallback to working directory
 	wd, err := os.Getwd()
 	if err != nil {
 		return "", err
 	}
 
-	// Navigate up until we find the go.mod file
-	for {
-		if _, err := os.Stat(filepath.Join(wd, "go.mod")); err == nil {
-			return wd, nil
-		}
-		parent := filepath.Dir(wd)
-		if parent == wd {
-			return "", fmt.Errorf("could not find project root")
-		}
-		wd = parent
-	}
+	return wd, nil
 }

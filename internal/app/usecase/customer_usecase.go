@@ -222,17 +222,63 @@ func CalculatePlafond(produk string, umur, penghasilan int64, payroll bool) Plaf
 			MaxTenor:  maxTenor,
 		}
 	}
-
 	if produk == "pensiun" {
-		const PriceAkhirPensiun = 1000
-		tenorMaks := (75 - int(umur)) * 12
-		angsuranMaks := 0.9 * float64(penghasilan)
-		plafondMaks := angsuranMaks * PriceAkhirPensiun
+
+		const DBR_PENSIUN = 0.9
+		const PRICE_AKHIR_MIN = 11.5
+		const PRICE_AKHIR_MAX = 15.0
+
+		tenorMaksAge := (75 - int(umur)) * 12
+		tenorMaks15Years := 15 * 12
+		tenorMaks := min(tenorMaksAge, tenorMaks15Years)
+
+		angsuranMaks := DBR_PENSIUN * float64(penghasilan)
+
+		priceAkhir := (PRICE_AKHIR_MIN + PRICE_AKHIR_MAX) / 2
+
+		plafondMaks := angsuranMaks * priceAkhir
 
 		return Plafond{
 			MinPlafon: 0,
 			MaxPlafon: uint64(plafondMaks),
 			MinTenor:  0,
+			MaxTenor:  tenorMaks,
+		}
+	}
+	if produk == "prapensiun" {
+		const DBR_PRA_PENSIUN = 0.4
+		const PRICE_AKHIR_MIN = 12.0
+		const PRICE_AKHIR_MAX = 13.0
+		const RETIREMENT_AGE = 58
+		const MAX_YEARS_BEFORE = 10
+		const MAX_TENOR_YEARS = 15
+
+		yearsToRetirement := RETIREMENT_AGE - int(umur)
+
+		eligibleForPrePension := (yearsToRetirement <= MAX_YEARS_BEFORE && yearsToRetirement > 0)
+
+		maxTenorByAge := (75 - int(umur)) * 12
+		maxTenorByYears := MAX_TENOR_YEARS * 12
+		tenorMaks := min(maxTenorByAge, maxTenorByYears)
+
+		angsuranMaks := DBR_PRA_PENSIUN * float64(penghasilan)
+
+		priceAkhir := (PRICE_AKHIR_MIN + PRICE_AKHIR_MAX) / 2
+
+		plafondMaks := angsuranMaks * priceAkhir
+
+		if !eligibleForPrePension {
+			plafondMaks = 0
+			tenorMaks = 0
+		}
+
+		tenorBeforePension := min(yearsToRetirement*12, tenorMaks)
+		tenorAfterPension := max(0, tenorMaks-tenorBeforePension)
+
+		return Plafond{
+			MinPlafon: 0,
+			MaxPlafon: uint64(plafondMaks),
+			MinTenor:  tenorAfterPension + tenorBeforePension,
 			MaxTenor:  tenorMaks,
 		}
 	}

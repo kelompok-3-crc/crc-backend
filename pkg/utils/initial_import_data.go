@@ -205,12 +205,16 @@ func ImportInitialCustomerData(ctx context.Context, db *gorm.DB) error {
 				log.Printf("Warning: Product '%s' not found in database", prodName)
 				continue
 			}
-
+			plafond := helper.CalculatePlafond(product.Prediksi, int64(customerWithoutProducts.Umur), customerWithoutProducts.Penghasilan, customerWithoutProducts.Payroll)
 			// Create customer-product relationship
 			customerProd := &model.CustomerProduct{
 				CustomerID: customerWithoutProducts.Id,
 				ProductID:  product.ID,
 				Order:      i + 1,
+				PlafonMin:  &plafond.MinPlafon,
+				PlafonMax:  &plafond.MaxPlafon,
+				TenorMin:   &plafond.MinTenor,
+				TenorMax:   &plafond.MaxTenor,
 			}
 
 			if err := tx.Create(customerProd).Error; err != nil {

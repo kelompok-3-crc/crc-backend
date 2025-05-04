@@ -86,6 +86,7 @@ jobs:
         run: |
           rm -rf venv || true
           python3.11 -m venv venv || echo "Failed to create virtual environment"
+          source venv/bin/activate || echo "Failed to activate virtual environment"
 
       - name: Restart application using systemd
         run: |

@@ -199,11 +199,14 @@ func (r *customerRepository) GetCustomerDetail(marketingID uint, customerID stri
 		Icon        string `gorm:"column:ikon"`
 		Prediksi    string `gorm:"column:prediksi"`
 		PlafonMax   uint64 `gorm:"column:plafon_max"`
+		PlafonMin   uint64 `gorm:"column:plafon_min"`
+		TenorMax    int    `gorm:"column:tenor_max"`
+		TenorMin    int    `gorm:"column:tenor_min"`
 		Order       int    `gorm:"column:order"`
 	}
 
 	if err := r.db.Table("customer_products cp").
-		Select("cp.product_id, p.nama, p.ikon, p.prediksi, cp.order, cp.plafon_max").
+		Select("cp.product_id, p.nama, p.ikon, p.prediksi, cp.order, cp.plafon_max, cp.plafon_min, cp.tenor_max, cp.tenor_min").
 		Joins("JOIN products p ON cp.product_id = p.id").
 		Where("cp.customer_id = ?", customer.Id).
 		Order("cp.order ASC").
@@ -225,6 +228,9 @@ func (r *customerRepository) GetCustomerDetail(marketingID uint, customerID stri
 			Ikon:      cp.Icon,
 			Prediksi:  cp.Prediksi,
 			PlafonMax: cp.PlafonMax,
+			PlafonMin: cp.PlafonMin,
+			TenorMin:  cp.TenorMin,
+			TenorMax:  cp.TenorMax,
 			Order:     cp.Order,
 		}
 	}

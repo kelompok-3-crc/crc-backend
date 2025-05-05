@@ -28,6 +28,9 @@ type CustomerProductResponse struct {
 	Ikon      string `json:"ikon"`
 	Prediksi  string `json:"prediksi"`
 	PlafonMax uint64 `json:"plafon_max"`
+	PlafonMin uint64 `gorm:"" json:"plafon_min"`
+	TenorMin  int    `gorm:"type:int;" json:"tenor_min"`
+	TenorMax  int    `gorm:"type:int;" json:"tenor_max"`
 	Order     int    `json:"order"`
 }
 

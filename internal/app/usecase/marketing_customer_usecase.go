@@ -122,8 +122,18 @@ func (u *marketingCustomerUsecase) GetMonthlyMonitoringMarketing(req *dto.Monito
 		return nil, fmt.Errorf("user tidak ditemukan atau bukan marketing: %v", err)
 	}
 
-	result, err := u.marketingCustomerRepo.GetMonthlyMonitoring(req.Month, req.Year)
-	return &result[0], err
+	results, err := u.marketingCustomerRepo.GetMonthlyMonitoring(req.Month, req.Year)
+	if err != nil {
+		return nil, fmt.Errorf("error fetching monitoring data: %v", err)
+	}
+
+	for _, result := range results {
+		if result.MarketingNIP == req.NIP {
+			return &result, nil
+		}
+	}
+
+	return nil, fmt.Errorf("tidak ada data monitoring untuk marketing dengan NIP %s", req.NIP)
 }
 
 func (s *marketingCustomerUsecase) GetProductPerformance(ctx context.Context, req *dto.ProductPerformanceRequest) (*dto.ProductPerformanceResponse, error) {

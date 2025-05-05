@@ -92,7 +92,7 @@ func (u *marketingTargetUsecase) AssignBulkMarketingTarget(req *dto.AssignMarket
 
 		if currentSum+target.Amount > branchTarget.TargetAmount {
 			tx.Rollback()
-			return fmt.Errorf("total target marketing melebihi target bulanan cabang untuk produk %d", target.ProductID)
+			return fmt.Errorf("total target marketing melebihi target bulanan cabang untuk produk %s", target.ProductName)
 		}
 
 		if existing, ok := existingTargetMap[target.ProductID]; ok {

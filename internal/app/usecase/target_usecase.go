@@ -72,9 +72,6 @@ func NewTargetUsecase(userRepo repository.UserRepository, targetRepo repository.
 	}
 }
 
-// CreateOrUpdateTargetTahunan creates or updates yearly targets and distributes them to monthly targets
-// @Summary Creates or updates yearly targets
-// @Description Sets yearly targets for products and automatically distributes them as monthly targets
 func (u *targetUsecase) CreateOrUpdateTargetTahunan(userNIP string, req *dto.TargetProdukTahunanRequest) error {
 	tx := u.db.Begin()
 	if tx.Error != nil {

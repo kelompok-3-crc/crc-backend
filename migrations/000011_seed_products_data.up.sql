@@ -7,7 +7,7 @@ ADD COLUMN IF NOT EXISTS prediksi VARCHAR(50) DEFAULT NULL;
 INSERT INTO
     products (nama, ikon, prediksi)
 VALUES
-    ('Mitraguna', 'mitraguna', 'mitraguna'),
+    ('Mitraguna Berkah', 'mitraguna', 'mitraguna'),
     ('Griya', 'griya', 'griya'),
     ('Pensiun', 'pensiun', 'pensiun'),
     ('Prapensiun', 'prapensiun', 'prapensiun'),

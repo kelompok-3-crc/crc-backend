@@ -36,15 +36,12 @@ func NewcustomerUsecase(custPredRepo repository.CustomerRepository, userRepo rep
 	return &customerUsecase{custPredRepo, userRepo, produkRepo, db}
 }
 func (s *customerUsecase) Create(c *fiber.Ctx, req dto.PredictionRequest) (*model.Customer, error) {
-
-	exists, err := s.custPredRepo.ExistsByCif(c, req.CIF)
-	if err != nil {
+	// Validate unique fields
+	if err := s.validateUniqueCustomerFields(c.Context(), req); err != nil {
 		return nil, err
 	}
-	if exists {
-		return nil, errors.New("User dengan CIF yang diberikan telah ada!")
-	}
 
+	// Continue with existing code for prediction and customer creation
 	inputJSON, err := json.Marshal(req)
 	if err != nil {
 		return nil, errors.New("Gagal memproses data input!")
@@ -163,6 +160,61 @@ func (s *customerUsecase) Create(c *fiber.Ctx, req dto.PredictionRequest) (*mode
 
 	tx.Commit()
 	return &fullCustomer, nil
+}
+
+// Add this new method for validation
+func (s *customerUsecase) validateUniqueCustomerFields(ctx context.Context, req dto.PredictionRequest) error {
+	// Check CIF uniqueness
+	var cifCount int64
+	if err := s.db.WithContext(ctx).Model(&model.Customer{}).
+		Where("cif = ? AND deleted_at IS NULL", req.CIF).
+		Count(&cifCount).Error; err != nil {
+		return fmt.Errorf("error checking CIF uniqueness: %v", err)
+	}
+	if cifCount > 0 {
+		return errors.New("customer dengan CIF tersebut sudah terdaftar")
+	}
+
+	// Check NomorRekening uniqueness (if provided)
+	if req.NomorRekening != "" {
+		var rekCount int64
+		if err := s.db.WithContext(ctx).Model(&model.Customer{}).
+			Where("nomor_rekening = ? AND deleted_at IS NULL", req.NomorRekening).
+			Count(&rekCount).Error; err != nil {
+			return fmt.Errorf("error checking Nomor Rekening uniqueness: %v", err)
+		}
+		if rekCount > 0 {
+			return errors.New("customer dengan Nomor Rekening tersebut sudah terdaftar")
+		}
+	}
+
+	// Check email uniqueness (if provided and if it's intended to be unique)
+	if req.Email != "" {
+		var emailCount int64
+		if err := s.db.WithContext(ctx).Model(&model.Customer{}).
+			Where("email = ? AND deleted_at IS NULL", req.Email).
+			Count(&emailCount).Error; err != nil {
+			return fmt.Errorf("error checking Email uniqueness: %v", err)
+		}
+		if emailCount > 0 {
+			return errors.New("customer dengan Email tersebut sudah terdaftar")
+		}
+	}
+
+	// Check phone number uniqueness (if provided and if it's intended to be unique)
+	if req.NomorHp != "" {
+		var phoneCount int64
+		if err := s.db.WithContext(ctx).Model(&model.Customer{}).
+			Where("nomor_hp = ? AND deleted_at IS NULL", req.NomorHp).
+			Count(&phoneCount).Error; err != nil {
+			return fmt.Errorf("error checking Nomor HP uniqueness: %v", err)
+		}
+		if phoneCount > 0 {
+			return errors.New("customer dengan Nomor HP tersebut sudah terdaftar")
+		}
+	}
+
+	return nil
 }
 
 func (u *customerUsecase) GetNewCustomers(ctx context.Context, NIP string, req *dto.CustomerSearchRequest) ([]dto.Customer, *dto.Pagination, error) {

@@ -91,8 +91,20 @@ func (u *marketingTargetUsecase) AssignBulkMarketingTarget(req *dto.AssignMarket
 		}
 
 		if currentSum+target.Amount > branchTarget.TargetAmount {
+			var productName string
+			err := tx.Table("products").
+				Select("nama").
+				Where("id = ? AND deleted_at IS NULL", target.ProductID).
+				Scan(&productName).Error
+
+			if err != nil {
+				tx.Rollback()
+				// Fallback to ID if product name can't be fetched
+				return fmt.Errorf("total target marketing melebihi target bulanan cabang untuk produk %d", target.ProductID)
+			}
+
 			tx.Rollback()
-			return fmt.Errorf("total target marketing melebihi target bulanan cabang untuk produk %s", target.ProductName)
+			return fmt.Errorf("total target marketing melebihi target bulanan cabang untuk produk %s", productName)
 		}
 
 		if existing, ok := existingTargetMap[target.ProductID]; ok {

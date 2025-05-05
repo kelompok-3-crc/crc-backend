@@ -77,3 +77,19 @@ type TargetSummaryResponse struct {
 	TargetYear   int                    `json:"target_year"`
 	TargetSetted bool                   `json:"target_setted"`
 }
+
+type BranchProductTarget struct {
+	ProductID        uint    `json:"product_id"`
+	ProductName      string  `json:"product_name"`
+	TotalTarget      float64 `json:"total_target"`
+	AssignedAmount   float64 `json:"assigned_amount"`
+	UnassignedAmount float64 `json:"unassigned_amount"`
+}
+
+type BranchTargetResponse struct {
+	BranchID   uint                  `json:"branch_id"`
+	BranchName string                `json:"branch_name"`
+	Month      int                   `json:"month"`
+	Year       int                   `json:"year"`
+	Products   []BranchProductTarget `json:"products"`
+}

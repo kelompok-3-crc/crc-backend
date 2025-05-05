@@ -30,6 +30,15 @@ type TargetRepository interface {
 	CreateTargetBulananWithTx(tx *gorm.DB, target *model.TargetProdukBulanan) error
 	GetMarketingTargets(req *dto.MonitoringRequest) ([]dto.MarketingTargetDetail, error)
 	GetTargetSummary(tx *gorm.DB, userID uint, role string, month, year int) (*dto.TargetSummaryResponse, error)
+	GetBranchTargets(branchID uint, month, year int) ([]struct {
+		ProductID    uint    `gorm:"column:product_id"`
+		ProductName  string  `gorm:"column:product_name"`
+		TargetAmount float64 `gorm:"column:target_amount"`
+	}, error)
+	GetAssignedTargets(branchID uint, month, year int) ([]struct {
+		ProductID uint    `gorm:"column:product_id"`
+		Amount    float64 `gorm:"column:amount"`
+	}, error)
 }
 
 type targetRepository struct {
@@ -350,6 +359,53 @@ func (r *targetRepository) GetTargetSummary(tx *gorm.DB, userID uint, role strin
 	response.Percentage = calculatePercentage(response.Achieved, response.TotalTarget)
 
 	return &response, nil
+}
+
+func (r *targetRepository) GetBranchTargets(branchID uint, month, year int) ([]struct {
+	ProductID    uint    `gorm:"column:product_id"`
+	ProductName  string  `gorm:"column:product_name"`
+	TargetAmount float64 `gorm:"column:target_amount"`
+}, error) {
+	var targets []struct {
+		ProductID    uint    `gorm:"column:product_id"`
+		ProductName  string  `gorm:"column:product_name"`
+		TargetAmount float64 `gorm:"column:target_amount"`
+	}
+
+	err := r.db.Raw(`
+        SELECT p.id as product_id, p.nama as product_name, 
+               COALESCE(tpb.target_amount, 0) as target_amount
+        FROM products p
+        LEFT JOIN target_produk_bulanan tpb ON tpb.product_id = p.id
+            AND tpb.kantor_cabang_id = ? AND tpb.bulan = ? AND tpb.tahun = ?
+            AND tpb.deleted_at IS NULL
+        WHERE p.deleted_at IS NULL
+        ORDER BY p.id
+    `, branchID, month, year).Scan(&targets).Error
+
+	return targets, err
+}
+
+func (r *targetRepository) GetAssignedTargets(branchID uint, month, year int) ([]struct {
+	ProductID uint    `gorm:"column:product_id"`
+	Amount    float64 `gorm:"column:amount"`
+}, error) {
+	var assigned []struct {
+		ProductID uint    `gorm:"column:product_id"`
+		Amount    float64 `gorm:"column:amount"`
+	}
+
+	err := r.db.Raw(`
+        SELECT mtb.product_id, SUM(mtb.target_amount) as amount
+        FROM marketing_target_bulanan mtb
+        JOIN users u ON u.id = mtb.marketing_id
+        WHERE u.kantor_cabang_id = ?
+            AND mtb.bulan = ? AND mtb.tahun = ?
+            AND mtb.deleted_at IS NULL AND u.deleted_at IS NULL
+        GROUP BY mtb.product_id
+    `, branchID, month, year).Scan(&assigned).Error
+
+	return assigned, err
 }
 
 // Helper function to calculate percentage safely

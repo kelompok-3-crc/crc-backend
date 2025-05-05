@@ -55,6 +55,9 @@ type TargetUsecase interface {
 	// @Failure 500 {object} string "Internal server error"
 	// @Router /targets/summary [get]
 	GetTargetSummary(ctx context.Context, userID uint, userNIP string, month, year int) (*dto.TargetSummaryResponse, error)
+
+	// GetBranchMonthlyTargetWithUnassigned retrieves branch monthly targets with unassigned amounts
+	GetBranchMonthlyTargetWithUnassigned(ctx context.Context, userNIP string, month, year int) (*dto.BranchTargetResponse, error)
 }
 
 type targetUsecase struct {
@@ -196,4 +199,61 @@ func (u *targetUsecase) GetTargetSummary(ctx context.Context, userID uint, userN
 	tx.Commit()
 
 	return summary, nil
+}
+
+func (u *targetUsecase) GetBranchMonthlyTargetWithUnassigned(ctx context.Context, userNIP string, month, year int) (*dto.BranchTargetResponse, error) {
+	user, err := u.userRepo.FindByNIP(userNIP)
+	if err != nil {
+		return nil, fmt.Errorf("user not found: %v", err)
+	}
+
+	if user.Role != "bm" {
+		return nil, fmt.Errorf("only branch managers can access branch targets")
+	}
+
+	// Get branch targets for the month
+	branchTargets, err := u.targetRepo.GetBranchTargets(*user.KantorCabangID, month, year)
+	if err != nil {
+		return nil, fmt.Errorf("error getting branch targets: %v", err)
+	}
+
+	// Get assigned targets to marketing staff
+	assignedTargets, err := u.targetRepo.GetAssignedTargets(*user.KantorCabangID, month, year)
+	if err != nil {
+		return nil, fmt.Errorf("error getting assigned targets: %v", err)
+	}
+
+	// Calculate unassigned amounts
+	response := &dto.BranchTargetResponse{
+		BranchID:   *user.KantorCabangID,
+		BranchName: "", // Fetch branch name if needed
+		Month:      month,
+		Year:       year,
+		Products:   []dto.BranchProductTarget{},
+	}
+
+	// Create a map of assigned amounts by product
+	assignedMap := make(map[uint]float64)
+	for _, assigned := range assignedTargets {
+		assignedMap[assigned.ProductID] += assigned.Amount
+	}
+
+	// Calculate unassigned amounts for each product
+	for _, target := range branchTargets {
+		assigned := assignedMap[target.ProductID]
+		unassigned := target.TargetAmount - assigned
+		if unassigned < 0 {
+			unassigned = 0 // Cannot have negative unassigned amount
+		}
+
+		response.Products = append(response.Products, dto.BranchProductTarget{
+			ProductID:        target.ProductID,
+			ProductName:      target.ProductName,
+			TotalTarget:      target.TargetAmount,
+			AssignedAmount:   assigned,
+			UnassignedAmount: unassigned,
+		})
+	}
+
+	return response, nil
 }

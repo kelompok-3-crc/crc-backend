@@ -17,7 +17,9 @@ import (
 type TargetHandler interface {
 	GetTargetSummary(c *fiber.Ctx) error
 	CreateTargetTahunan(c *fiber.Ctx) error
+	GetBranchMonthlyTarget(c *fiber.Ctx) error // New endpoint
 }
+
 type targetHandler struct {
 	Usecase usecase.TargetUsecase
 	cfg     config.Configuration
@@ -109,4 +111,43 @@ func (h *targetHandler) GetTargetSummary(c *fiber.Ctx) error {
 	}
 
 	return response.Success(c, "Mengambil data profil berhasil", summary)
+}
+
+func (h *targetHandler) GetBranchMonthlyTarget(c *fiber.Ctx) error {
+	// Extract user info from context (set by auth middleware)
+	userNIP := c.Locals("nip").(string)
+	if userNIP == "" {
+		return response.Error(c, fiber.StatusUnauthorized, "Unauthorized", "User not authenticated")
+	}
+
+	// Get month/year parameters, defaulting to current month if not provided
+	currentTime := time.Now()
+
+	monthStr := c.Query("month")
+	month := int(currentTime.Month())
+	if monthStr != "" {
+		monthInt, err := strconv.Atoi(monthStr)
+		if err != nil || monthInt < 1 || monthInt > 12 {
+			return response.Error(c, fiber.StatusBadRequest, "Invalid month", "Month must be between 1 and 12")
+		}
+		month = monthInt
+	}
+
+	yearStr := c.Query("year")
+	year := currentTime.Year()
+	if yearStr != "" {
+		var err error
+		year, err = strconv.Atoi(yearStr)
+		if err != nil {
+			return response.Error(c, fiber.StatusBadRequest, "Invalid year", "Year must be a valid number")
+		}
+	}
+
+	// Get branch target data with unassigned amounts
+	branchTarget, err := h.Usecase.GetBranchMonthlyTargetWithUnassigned(c.Context(), userNIP, month, year)
+	if err != nil {
+		return response.Error(c, fiber.StatusInternalServerError, "Failed to get branch target data", err.Error())
+	}
+
+	return response.Success(c, "Target data retrieved successfully", branchTarget)
 }

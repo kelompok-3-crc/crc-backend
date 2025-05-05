@@ -74,4 +74,5 @@ func Register(api fiber.Router, db *gorm.DB, cfg config.Configuration, log *zap.
 	bm.Post("/monitoring/assignment/:nip", marketingTargetHandler.AssignMarketingTarget)
 	bm.Get("/monitoring/product-performance", marketingCustomerHandler.GetProductPerformance)
 
+	bm.Get("/branch-targets", targetHandler.GetBranchMonthlyTarget)
 }

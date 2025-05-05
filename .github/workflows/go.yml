@@ -53,6 +53,7 @@ jobs:
 
       - name: Deploy application locally
         run: |
+          sudo systemctl stop myapp.service
           mkdir -p /home/hendra/app
           cp deployment/myapp /home/hendra/app/ || echo "myapp not found in deployment"
           cp deployment/requirements.txt /home/hendra/app/ || echo "requirements.txt not found in deployment"

@@ -196,8 +196,11 @@ func ImportInitialCustomerData(ctx context.Context, db *gorm.DB) error {
 		}
 
 		// Add top predicted products
-		for i := 0; i < 3 && i < len(result.sortedPreds); i++ {
+		for i := 0; i < len(result.sortedPreds); i++ {
 			prodName := result.sortedPreds[i].Key
+			if result.sortedPreds[i].Value == 0 {
+				continue
+			}
 
 			// Find product by prediction name
 			product, exists := productMap[strings.ToLower(prodName)]

@@ -83,6 +83,12 @@ func CalculatePlafond(produk string, umur, penghasilan int64, payroll bool) Plaf
 
 		plafondMaks := angsuranMaks * priceAkhir
 
+		eligibleForPrePension := (umur > 58)
+		if !eligibleForPrePension {
+			plafondMaks = 0
+			tenorMaks = 0
+		}
+
 		return Plafond{
 			MinPlafon: 0,
 			MaxPlafon: uint64(plafondMaks),

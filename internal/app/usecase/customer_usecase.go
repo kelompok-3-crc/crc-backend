@@ -120,7 +120,15 @@ func (s *customerUsecase) Create(c *fiber.Ctx, req dto.PredictionRequest) (*mode
 		return nil, errors.New(fmt.Sprintf("Gagal menambahkan data customer: %v", err))
 	}
 	customerProduct := []*model.CustomerProduct{}
-	for i := 0; i < 3 && i < len(sortedPreds); i++ {
+
+	// Use a different loop approach to ensure we get 3 valid products
+	for i := 0; i < len(sortedPreds); i++ {
+		// Skip products with prediction value of exactly 0
+		fmt.Println("Prediksi:", sortedPreds[i].Key, "Nilai:", sortedPreds[i].Value)
+		if sortedPreds[i].Value == 0 {
+			continue
+		}
+
 		produk, err := s.produkRepo.FindByPrediksi(sortedPreds[i].Key)
 		if err != nil {
 			tx.Rollback()
@@ -128,7 +136,7 @@ func (s *customerUsecase) Create(c *fiber.Ctx, req dto.PredictionRequest) (*mode
 		}
 
 		plafond := helper.CalculatePlafond(produk.Prediksi, int64(data.Umur), data.Penghasilan, data.Payroll)
-		// Create a product relationship with customer ID
+
 		customerProd := &model.CustomerProduct{
 			CustomerID: data.Id,
 			ProductID:  produk.ID,
@@ -147,7 +155,6 @@ func (s *customerUsecase) Create(c *fiber.Ctx, req dto.PredictionRequest) (*mode
 		customerProduct = append(customerProduct, customerProd)
 	}
 
-	// Fetch the complete customer with products
 	var fullCustomer model.Customer
 	if err := tx.Preload("CustomerProduk").Where("id = ?", data.Id).First(&fullCustomer).Error; err != nil {
 		tx.Rollback()

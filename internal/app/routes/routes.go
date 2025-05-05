@@ -67,6 +67,7 @@ func Register(api fiber.Router, db *gorm.DB, cfg config.Configuration, log *zap.
 	kc.Get("/", kcHandler.GetAll)
 
 	bm := api.Group("/bm", middleware.JWTMiddleware("bm"))
+	bm.Post("/kantor_cabang/target", targetHandler.CreateTargetTahunan)
 	bm.Get("/monitoring/target", marketingCustomerHandler.GetMonthlyMonitoring)
 	bm.Get("/monitoring/assignment", marketingTargetHandler.GetMarketingTargets)
 	bm.Get("/monitoring/assignment/:nip", marketingTargetHandler.GetMarketingTargetsDetail)

@@ -89,6 +89,9 @@ func CalculatePlafond(produk string, umur, penghasilan int64, payroll bool) Plaf
 		const PRICE_AKHIR_MAX = 15.0
 		const RETIREMENT_AGE = 58
 		const MAX_YEARS_BEFORE = 10
+		const MIN_TENOR_MONTHS = 12
+		const MIN_PLAFOND = 10000000
+		const MAX_PLAFOND = 350000000
 
 		tenorMaksAge := (75 - int(umur)) * 12
 		tenorMaks15Years := 15 * 12
@@ -99,6 +102,8 @@ func CalculatePlafond(produk string, umur, penghasilan int64, payroll bool) Plaf
 		priceAkhir := (PRICE_AKHIR_MIN + PRICE_AKHIR_MAX) / 2
 
 		plafondMaks := angsuranMaks * priceAkhir
+		plafondMin := DBR_PENSIUN * float64(penghasilan) * PRICE_AKHIR_MIN
+		plafondMin = max(plafondMin, MIN_PLAFOND)
 
 		yearsToRetirement := RETIREMENT_AGE - int(umur)
 
@@ -108,10 +113,11 @@ func CalculatePlafond(produk string, umur, penghasilan int64, payroll bool) Plaf
 			tenorMaks = 0
 		}
 
+		tenorMaks = min(tenorMaks, MAX_PLAFOND)
 		return Plafond{
-			MinPlafon: 0,
+			MinPlafon: uint64(plafondMin),
 			MaxPlafon: uint64(plafondMaks),
-			MinTenor:  0,
+			MinTenor:  12,
 			MaxTenor:  tenorMaks,
 		}
 	}
@@ -122,10 +128,16 @@ func CalculatePlafond(produk string, umur, penghasilan int64, payroll bool) Plaf
 		const RETIREMENT_AGE = 58
 		const MAX_YEARS_BEFORE = 10
 		const MAX_TENOR_YEARS = 15
+		const MIN_TENOR_MONTHS = 36
+		const MIN_PENSION_PERIOD = 12
+		const MIN_PLAFOND = 10000000
+		const MAX_PLAFOND = 350000000
 
 		yearsToRetirement := RETIREMENT_AGE - int(umur)
 
-		eligibleForPrePension := (yearsToRetirement <= MAX_YEARS_BEFORE && yearsToRetirement > 0)
+		eligibleForPrePension := (yearsToRetirement <= MAX_YEARS_BEFORE &&
+			yearsToRetirement > 0 &&
+			int(umur)+MIN_TENOR_MONTHS/12 > RETIREMENT_AGE+MIN_PENSION_PERIOD/12)
 
 		maxTenorByAge := (75 - int(umur)) * 12
 		maxTenorByYears := MAX_TENOR_YEARS * 12
@@ -136,19 +148,45 @@ func CalculatePlafond(produk string, umur, penghasilan int64, payroll bool) Plaf
 		priceAkhir := (PRICE_AKHIR_MIN + PRICE_AKHIR_MAX) / 2
 
 		plafondMaks := angsuranMaks * priceAkhir
+		plafondMin := DBR_PRA_PENSIUN * float64(penghasilan) * PRICE_AKHIR_MIN
+		plafondMin = max(plafondMin, MIN_PLAFOND)
+
+		plafondMaks = min(plafondMaks, float64(MAX_PLAFOND))
 
 		if !eligibleForPrePension {
 			plafondMaks = 0
+			plafondMin = 0
 			tenorMaks = 0
 		}
 
-		tenorBeforePension := min(yearsToRetirement*12, tenorMaks)
-		tenorAfterPension := max(0, tenorMaks-tenorBeforePension)
+		tenorBeforePension := min(yearsToRetirement*12, tenorMaks-MIN_PENSION_PERIOD)
+		tenorAfterPension := max(MIN_PENSION_PERIOD, tenorMaks-tenorBeforePension)
+
+		totalTenor := tenorBeforePension + tenorAfterPension
+		if totalTenor < MIN_TENOR_MONTHS {
+
+			if !eligibleForPrePension {
+				plafondMaks = 0
+				plafondMin = 0
+				tenorMaks = 0
+			} else {
+
+				tenorMaks = max(MIN_TENOR_MONTHS, tenorMaks)
+
+				tenorBeforePension = min(yearsToRetirement*12, tenorMaks-MIN_PENSION_PERIOD)
+				tenorAfterPension = max(MIN_PENSION_PERIOD, tenorMaks-tenorBeforePension)
+			}
+		}
+
+		minTenor := 0
+		if eligibleForPrePension {
+			minTenor = MIN_TENOR_MONTHS
+		}
 
 		return Plafond{
-			MinPlafon: 0,
+			MinPlafon: uint64(plafondMin),
 			MaxPlafon: uint64(plafondMaks),
-			MinTenor:  tenorAfterPension + tenorBeforePension,
+			MinTenor:  minTenor,
 			MaxTenor:  tenorMaks,
 		}
 	}

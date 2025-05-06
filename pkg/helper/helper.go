@@ -102,8 +102,8 @@ func CalculatePlafond(produk string, umur, penghasilan int64, payroll bool) Plaf
 
 		yearsToRetirement := RETIREMENT_AGE - int(umur)
 
-		eligibleForPrePension := (yearsToRetirement <= MAX_YEARS_BEFORE && yearsToRetirement > 0)
-		if !eligibleForPrePension {
+		eligibleForPension := (yearsToRetirement <= MAX_YEARS_BEFORE && int(umur) < 75)
+		if !eligibleForPension {
 			plafondMaks = 0
 			tenorMaks = 0
 		}
